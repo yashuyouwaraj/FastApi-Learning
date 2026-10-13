@@ -52,3 +52,24 @@ def create_todo(title:str,db: Session = Depends(get_db)):
         "message":"Todo Created",
         "data":todo
     }
+
+#Real All Data
+@app.get("/todos")
+def get_todos(db: Session = Depends(get_db)):
+    todos = db.query(Todo).all()
+    return{
+        "message":"Todos fetched",
+        "Total":len(todos),
+        "data":todos
+    }
+
+#Get Single Data By Id
+@app.get("/todos/{id}")
+def get_todo(id:int, db:Session = Depends(get_db)):
+    todo = db.query(Todo).filter(Todo.id == id).first()
+    if not todo:
+        raise HTTPException(status_code=404, detail="Todo not found")
+    return{
+        "message":"Todo fetched",
+        "data": todo
+    }
