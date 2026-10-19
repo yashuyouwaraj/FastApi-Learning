@@ -2,6 +2,7 @@ from fastapi import FastAPI,Depends,HTTPException,Query
 from sqlalchemy.orm import Session
 from database import engine,SessionLocal
 import model,schemas
+from auth import create_token,verify_token
 
 model.Base.metadata.create_all(bind=engine)
 
@@ -20,11 +21,18 @@ def home():
     return{
         "message":"Blog API Started"
     }
+    
 
+@app.post("/login")
+def login():
+    return {
+        "access_token": create_token({"user":"admin"}),
+        "token_type":"bearer"
+    }
 
 #Create Blog
 @app.post("/blogs",response_model= schemas.BlogResponse)
-def create_blog(blog:schemas.BlogCreate, db:Session = Depends(get_db)):
+def create_blog(blog:schemas.BlogCreate, db:Session = Depends(get_db), user = Depends(verify_token)):
     new_blog = model.Blog(
         title = blog.title,
         content = blog.content
@@ -53,7 +61,7 @@ def get_blog(id:int, db: Session = Depends(get_db)):
 
 #Update Blog
 @app.put("/blogs/{id}",response_model=schemas.BlogResponse)
-def update_blog(id:int, blog:schemas.BlogCreate, db: Session = Depends(get_db)):
+def update_blog(id:int, blog:schemas.BlogCreate, db: Session = Depends(get_db), user = Depends(verify_token)):
     existingblog = db.query(model.Blog).filter(model.Blog.id == id).first()
         
     if not existingblog:
@@ -68,7 +76,7 @@ def update_blog(id:int, blog:schemas.BlogCreate, db: Session = Depends(get_db)):
 
 #Delete Blog
 @app.delete("/blogs/{id}")
-def delete_blog(id:int, db:Session = Depends(get_db)):
+def delete_blog(id:int, db:Session = Depends(get_db), user = Depends(verify_token)):
     existing_blog = db.query(model.Blog).filter(model.Blog.id == id).first()
     
     if not existing_blog:
